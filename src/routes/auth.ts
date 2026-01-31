@@ -118,9 +118,13 @@ authRouter.post("/register", async (req, res) => {
     await saveSession(req.session);
 
     res.status(201).json({
-      id: newUser.id,
-      username: newUser.username,
-      email: newUser.email,
+      message: "Register successful",
+      user: {
+        id: newUser.id,
+        username: newUser.username,
+        email: newUser.email,
+      },
+      cookie: `SESSION=${req.sessionID}; Path=/; Domain=.cher1shrxd.me; HttpOnly; Secure; SameSite=Lax`,
     });
   } catch (error) {
     console.error("Register error:", error);
@@ -166,6 +170,7 @@ authRouter.post("/login", async (req, res) => {
         username: user.username,
         email: user.email,
       },
+      cookie: `SESSION=${req.sessionID}; Path=/; Domain=.cher1shrxd.me; HttpOnly; Secure; SameSite=Lax`,
     });
   } catch (error) {
     console.error("Login error:", error);
