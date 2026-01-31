@@ -53,10 +53,8 @@ jobs:
 
             git pull origin main
 
-            npm i -g pnpm
-
             docker run --rm \
               --network singleton_default \
               -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
               cher1shrxd/singleton-server:latest \
-              pnpm drizzle-kit migrate
+              sudo pnpm drizzle-kit migrate
