@@ -30,6 +30,17 @@ jobs:
             -t cher1shrxd/singleton-server:latest \
             --push .
 
+      - name: Deploy to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker compose pull
+            docker compose down
+            docker compose up -d
+
       - name: Run DB migrations
         uses: appleboy/ssh-action@master
         with:
@@ -41,22 +52,10 @@ jobs:
 
             git pull origin main
 
-            pnpm i
+            npm i -g pnpm
 
             docker run --rm \
+              --network singleton_default \
               -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
-              -v $(pwd)/drizzle:/app/drizzle \
-              -v $(pwd)/drizzle.config.ts:/app/drizzle.config.ts \
               cher1shrxd/singleton-server:latest \
               pnpm drizzle-kit migrate
-
-      - name: Deploy to server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            docker compose pull
-            docker compose down
-            docker compose up -d
