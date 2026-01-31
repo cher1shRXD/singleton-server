@@ -37,6 +37,10 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            cd singleton-server
+
+            git pull origin main
+
             docker run --rm \
               -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
               -v $(pwd)/drizzle:/app/drizzle \
