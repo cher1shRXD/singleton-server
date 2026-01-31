@@ -8,8 +8,7 @@
     "start": "node dist/index.js",
     "db:generate": "pnpm drizzle-kit generate",
     "db:migrate": "pnpm drizzle-kit migrate",
-    "db:push": "pnpm drizzle-kit push",
-    "db:studio": "pnpm drizzle-kit studio"
+    "db:push": "pnpm drizzle-kit push"
   },
   "keywords": [],
   "author": "",
