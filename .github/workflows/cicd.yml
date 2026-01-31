@@ -57,4 +57,4 @@ jobs:
               --network singleton-server_default \
               -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
               cher1shrxd/singleton-server:latest \
-              sudo pnpm drizzle-kit migrate
+              pnpm drizzle-kit migrate
