@@ -23,12 +23,34 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker image
+      - name: Build & push app image
         run: |
           docker buildx build \
             --platform linux/amd64 \
             -t cher1shrxd/singleton-server:latest \
             --push .
+
+      - name: Build & push migrator image
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -f Dockerfile.migrate \
+            -t cher1shrxd/singleton-migrator:latest \
+            --push .
+
+      - name: Run DB migrations
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker pull cher1shrxd/singleton-migrator:latest
+
+            docker run --rm \
+              --network singleton-server_default \
+              -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
+              cher1shrxd/singleton-migrator:latest
 
       - name: Deploy to server
         uses: appleboy/ssh-action@master
@@ -41,20 +63,3 @@ jobs:
             docker compose pull
             docker compose down
             docker compose up -d
-
-      - name: Run DB migrations
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd singleton-server
-
-            git pull origin main
-
-            docker run --rm \
-              --network singleton-server_default \
-              -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
-              cher1shrxd/singleton-server:latest \
-              pnpm drizzle-kit migrate
