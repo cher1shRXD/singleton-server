@@ -124,7 +124,7 @@ authRouter.post("/register", async (req, res) => {
         username: newUser.username,
         email: newUser.email,
       },
-      cookie: `SESSION=${req.sessionID}; Path=/; Domain=.cher1shrxd.me; HttpOnly; Secure; SameSite=Lax`,
+      cookie: req.sessionID,
     });
   } catch (error) {
     console.error("Register error:", error);
@@ -170,7 +170,7 @@ authRouter.post("/login", async (req, res) => {
         username: user.username,
         email: user.email,
       },
-      cookie: `SESSION=${req.sessionID}; Path=/; Domain=.cher1shrxd.me; HttpOnly; Secure; SameSite=Lax`,
+      cookie: req.sessionID,
     });
   } catch (error) {
     console.error("Login error:", error);
