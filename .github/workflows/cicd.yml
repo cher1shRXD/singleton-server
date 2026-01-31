@@ -41,6 +41,8 @@ jobs:
 
             git pull origin main
 
+            pnpm i
+
             docker run --rm \
               -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
               -v $(pwd)/drizzle:/app/drizzle \
