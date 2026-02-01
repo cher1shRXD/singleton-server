@@ -47,6 +47,33 @@ const saveSession = (session: any): Promise<void> => {
   });
 };
 
+const getUserIdFromRequest = async (req: any): Promise<number | null> => {
+  // 먼저 세션에서 userId 확인
+  if (req.session.userId) {
+    return req.session.userId;
+  }
+
+  // authorization 헤더에서 세션 ID 추출
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return null;
+  }
+
+  // Bearer 스키마를 사용하여 세션 ID 추출
+  const sessionId = authHeader.replace(/^Bearer\s+/i, "");
+
+  // 세션 스토어에서 세션 조회
+  return new Promise((resolve) => {
+    req.sessionStore.get(sessionId, (err: any, session: any) => {
+      if (err || !session) {
+        resolve(null);
+      } else {
+        resolve(session.userId || null);
+      }
+    });
+  });
+};
+
 authRouter.post("/register", async (req, res) => {
   try {
     const { username, email, phone, password } = req.body;
@@ -180,7 +207,7 @@ authRouter.post("/login", async (req, res) => {
 
 authRouter.get("/profile", async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = await getUserIdFromRequest(req);
 
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
@@ -206,14 +233,25 @@ authRouter.get("/profile", async (req, res) => {
 
 authRouter.post("/logout", async (req, res) => {
   try {
-    await new Promise<void>((resolve, reject) => {
-      req.session.destroy((err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+    const authHeader = req.headers.authorization;
+    const sessionIdFromAuth = authHeader ? authHeader.replace(/^Bearer\s+/i, "") : null;
 
-    res.clearCookie("SESSION");
+    if (sessionIdFromAuth) {
+      await new Promise<void>((resolve) => {
+        req.sessionStore.destroy(sessionIdFromAuth, () => {
+          resolve();
+        });
+      });
+    } else {
+      await new Promise<void>((resolve, reject) => {
+        req.session.destroy((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      res.clearCookie("SESSION");
+    }
+
     res.json({ message: "Logout successful" });
   } catch (error) {
     console.error("Logout error:", error);
@@ -221,13 +259,37 @@ authRouter.post("/logout", async (req, res) => {
   }
 });
 
-authRouter.get("/check", (req, res) => {
-  const isAuthenticated = !!req.session.userId;
-  res.json({
-    authenticated: isAuthenticated,
-    userId: req.session.userId || null,
-    username: req.session.username || null,
-  });
+authRouter.get("/check", async (req, res) => {
+  try {
+    const userId = await getUserIdFromRequest(req);
+    const isAuthenticated = !!userId;
+    
+    let username = req.session.username || null;
+    
+    if (!username && userId) {
+      const authHeader = req.headers.authorization;
+      if (authHeader) {
+        const sessionId = authHeader.replace(/^Bearer\s+/i, "");
+        await new Promise<void>((resolve) => {
+          req.sessionStore.get(sessionId, (err: any, session: any) => {
+            if (!err && session) {
+              username = session.username || null;
+            }
+            resolve();
+          });
+        });
+      }
+    }
+    
+    res.json({
+      authenticated: isAuthenticated,
+      userId: userId,
+      username: username,
+    });
+  } catch (error) {
+    console.error("Check error:", error);
+    res.status(500).json({ message: "Authentication check failed" });
+  }
 });
 
 export default authRouter;
